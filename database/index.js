@@ -4,11 +4,13 @@ const Users = require('./Users');
 const Comments = require('./Comments');
 const Likes = require('./Likes');
 const Admins = require('./Admins');
+const { client } = require('./connect');
 
 module.exports = {
     Movies,
     Users, 
     Comments,
     Likes,
-    Admins
+    Admins,
+    client
 }

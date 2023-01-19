@@ -1,5 +1,6 @@
 'use strict';
 
+require('./schema');
 require("dotenv").config();
 require("express-async-errors");
 
@@ -28,6 +29,7 @@ const start = async () => {
     client.connect()
         .then((v) => {
             console.log('<< Mongodb Connected >>');
+            client.emit('connected');  
         })
         .then((v) => {
             const port = process.env.PORT || 3000;
