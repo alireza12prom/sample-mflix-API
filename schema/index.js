@@ -1,4 +1,4 @@
-const { Users, client } = require("../database");
+const { Users, client, Admins } = require("../database");
 const DB = process.env.MONGO_DB;
 
 // schemas
@@ -22,4 +22,5 @@ class Schema {
 client.on('connected', () => {
     console.log("*** Setup Schemas ***");
     Schema.setup(userSchema, Users);
+    Schema.setup(userSchema, Admins);
 })

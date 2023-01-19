@@ -1,7 +1,7 @@
 'use strict';
 
-require('./schema');
 require("dotenv").config();
+require('./schema');
 require("express-async-errors");
 
 const bodyParser = require("body-parser");
@@ -38,7 +38,7 @@ const start = async () => {
                 console.log(`Server: http://${host}:${port}`);
             })
             
-            server.setTimeout(5000);
+            server.setTimeout(8000);
             server.on('timeout', (socket) => {
                 socket.destroy();
             });
