@@ -3,43 +3,44 @@
 const Joi = require("joi");
 const { BadRequestError } = require("../errors");
 
+const nameSchema = Joi.string().trim().lowercase();
+const passwordSchema = Joi.string().trim().alphanum();
+const emailSchema = Joi.string().trim().lowercase().email();
 
-const schema = {
-    name: Joi.string().trim().lowercase().min(1).max(20),
-    email: Joi.string().trim().lowercase().email()  
-}
+const newUserSchema = Joi.object({
+    name: nameSchema.min(3).required(),
+    email: emailSchema.required(),
+    password: passwordSchema.min(10).required()
+});
 
+const updateUserSchema = Joi.object({
+    name: nameSchema.min(3),
+    email: emailSchema,
+    password: passwordSchema
+});
 
 class ValidateBody {
     constructor() {}
 
-
     validateBodyOnUpdateUser(request, response, next) {
-        const { name, email } = request.body;
+        const { name, email, password } = request.body;
 
-        const { error, value } = Joi.object(schema).validate({ name, email });
-        if (error) {
-            throw new BadRequestError(`${error.details[0].message}`);
-        } 
+        const { error, value } = updateUserSchema.validate({ name, email, password });
+        if (error) throw new BadRequestError(`${error.details[0].message}`);
+
         request.body = value;
         next();
     }
 
     validateBodyOnCreateUser(request, response, next) {
-        const { name, email } = request.body;
+        const { name, email, password } = request.body;
 
-        const newSchema = Object.assign({}, schema);
-        newSchema.name = schema.name.required();
-        newSchema.email = schema.email.required();
-
-        const { error, value } = Joi.object(newSchema).validate({ name, email });
-        if (error) {
-            throw new BadRequestError(`${error.details[0].message}`);
-        } 
+        const { error, value } = newUserSchema.validate({ name, email, password });
+        if (error) throw new BadRequestError(error.details[0].message);
+        
         request.body = value;
         next();
     }
-
 }
 
 module.exports = new ValidateBody();
