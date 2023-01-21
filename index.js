@@ -9,6 +9,7 @@ const logger = require('morgan');
 const { errorHandlerMiddleware } = require('./middleware');
 const cors = require('cors');
 const express = require('express');
+const { client } = require('./database');
 const app = express();
 
 app.use(logger('dev'));
@@ -23,3 +24,13 @@ app.use(errorHandlerMiddleware.routeNotFound);
 
 // error handler
 app.use(errorHandlerMiddleware.onError);
+
+const port = process.env.PORT;
+const host = process.env.HOST;
+
+app.listen(port, host, async () => {
+    await client.connect();
+    console.log('<< Mongo Connect >>');
+
+    console.log(`http://${host}:${port}`);
+});

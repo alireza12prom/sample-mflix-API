@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const { capitalizaFirstLetter } = require('../utils');
 const { BadRequestError } = require('../errors');
+const { CURSOR_FLAGS } = require('mongodb');
 
 const validLanguages = {
     EN: 'English',
@@ -87,90 +88,33 @@ const validCountries = {
 
 const validTypes = ['movie', 'series'];
 
-const QuerySchema = Joi.object({
-    languages: Joi.string()
-        .trim()
-        .uppercase()
-        .valid(...Object.getOwnPropertyNames(validLanguages)),
-
-    genres: Joi.array().items(Joi.string().valid(...validGenres)),
-
-    year: Joi.number()
-        .integer()
-        .min(1917)
-        .message('Year must be greater thant 1917')
-        .max(new Date().getFullYear())
-        .message(`Year must be less than ${new Date().getFullYear()}`),
-
-    countries: Joi.array().items(
-        Joi.string().valid(...Object.getOwnPropertyNames(validCountries))
-    ),
-
-    type: Joi.string()
-        .trim()
-        .lowercase()
-        .valid(...validTypes),
-
-    directors: Joi.string().trim().min(1).max(34),
-
-    query: Joi.string().trim().min(1).max(34),
+const paginationSchema = Joi.object({
+    page: Joi.alternatives()
+        .try(Joi.number().integer().min(0).empty(''))
+        .default(0),
+    per_page: Joi.alternatives()
+        .try(Joi.number().integer().min(5).max(50).empty(''))
+        .default(15),
+    rel: Joi.string()
+        .insensitive()
+        .empty()
+        .default(null)
+        .valid('next', 'prev', 'first', 'last', null),
 });
 
 const middleware = function (request, response, next) {
-    let { p, lan, gen, year, countries, type, dir, q } = request.query;
+    let { page, per_page, rel } = request.query;
 
-    request.query.p = parseInt(p) ? parseInt(p) : 0;
+    let validation;
+    const newQueryObject = {};
 
-    let QueryObject = {};
-    if (lan) QueryObject.languages = lan;
-    if (gen)
-        QueryObject.genres = gen
-            .split(',')
-            .map((g) => capitalizaFirstLetter(g.trim()));
-    if (year) QueryObject.year = parseInt(year);
-    if (countries)
-        QueryObject.countries = countries
-            .split(',')
-            .map((v) => v.trim().toUpperCase());
-    if (type) QueryObject.type = type;
-    if (dir) QueryObject.directors = dir;
-    if (q) QueryObject.query = q;
+    // pagination query params
+    validation = paginationSchema.validate({ page, per_page, rel });
+    if (validation.error)
+        throw new BadRequestError(validation.error.details[0].message);
 
-    // validate queries
-    const { error, value } = QuerySchema.validate(QueryObject);
-    if (error) {
-        throw new BadRequestError(error.details[0].message);
-    }
-
-    let FilterObject = {};
-    const validQueries = Object.getOwnPropertyNames(value);
-    if (validQueries.includes('languages')) {
-        FilterObject.languages = validLanguages[value.languages];
-    }
-
-    if (validQueries.includes('genres')) {
-        FilterObject.genres = { $all: value.genres };
-    }
-
-    if (validQueries.includes('countries')) {
-        FilterObject.countries = {
-            $all: value.countries.map((v) => validCountries[v]),
-        };
-    }
-
-    if (validQueries.includes('type')) {
-        FilterObject.type = value.type;
-    }
-
-    if (validQueries.includes('directors')) {
-        FilterObject.directors = new RegExp(value.directors, 'i');
-    }
-
-    if (validQueries.includes('query')) {
-        FilterObject.$text = { $search: `"${value.query}"` };
-    }
-
-    request.Filters = FilterObject;
+    Object.assign(newQueryObject, validation.value);
+    request.query = newQueryObject;
     next();
 };
 

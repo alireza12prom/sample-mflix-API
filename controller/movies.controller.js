@@ -6,7 +6,9 @@ const { ObjectId } = require('mongodb');
 class MovieContorller {
     constructor() {}
     /**
-     *  p: page
+     *  Pagination queries:
+     *      page, pre_page, rel
+     *
      *  lan: language
      *  gen: genres,
      *  year: year
@@ -16,49 +18,49 @@ class MovieContorller {
      *  q: search by title and fullplot
      */
     async getAllMovies(request, response) {
-        let { p } = request.query;
-        const { Filters } = request;
+        let { page, per_page, rel } = request.query;
+        let Sorts = { $natural: 1 };
+        let Projection = {
+            tomatoes: 0,
+            awards: 0,
+            fullplot: 0,
+            poster: 0,
+            lastupdated: 0,
+            comments: 0,
+        };
 
         // pagination
-        let limit = 15; // each page have 15 movies
-        let skip = p * limit;
+        let skip, limit;
+        switch (rel) {
+            case 'first':
+                skip = 0;
+                limit = (page + 1) * per_page;
+                break;
+            case 'last':
+                skip = 0;
+                limit = (page + 1) * per_page;
+                Sorts.$natural = -1;
+                break;
+            case 'next':
+                skip = (page + 1) * per_page;
+                limit = per_page;
+                break;
+            case 'prev':
+                // NOTE: if page was 0, we don't have any prev page to return
+                skip = (page == 0 ? 0 : page - 1) * per_page;
+                limit = per_page;
+                break;
+            default:
+                skip = page * per_page;
+                limit = per_page;
+        }
 
-        console.log('*** Filters: ', Filters, ' ***');
-        const movies = await Movies.aggregate([
-            {
-                $match: { ...Filters },
-            },
-            {
-                $lookup: {
-                    from: 'comments',
-                    localField: '_id',
-                    foreignField: 'movie_id',
-                    as: 'comments',
-                },
-            },
-            {
-                $lookup: {
-                    from: 'likes',
-                    localField: '_id',
-                    foreignField: 'movie_id',
-                    as: 'likes',
-                },
-            },
-            {
-                $set: {
-                    num_mflix_comments: { $size: '$comments' },
-                    likes: { $size: '$likes' },
-                },
-            },
-        ])
-            .project({
-                tomatoes: 0,
-                awards: 0,
-                fullplot: 0,
-                poster: 0,
-                lastupdated: 0,
-                comments: 0,
-            })
+        console.log('limit: ', limit, 'skip: ', skip);
+        console.log('*** Sort: ', Sorts, ' ***');
+
+        let movies = await Movies.find({})
+            .sort(Sorts)
+            .project(Projection)
             .skip(skip)
             .limit(limit)
             .toArray();
@@ -111,11 +113,9 @@ class MovieContorller {
                     movie_id: movie._id,
                 })
                     .then((v) => {
-                        response
-                            .status(StatusCodes.OK)
-                            .json({
-                                msg: `User ${name} like movie ${movieId} successfully`,
-                            });
+                        response.status(StatusCodes.OK).json({
+                            msg: `User ${name} like movie ${movieId} successfully`,
+                        });
                     })
                     .catch(next);
             })
@@ -171,11 +171,9 @@ class MovieContorller {
                     date: new Date(),
                 })
                     .then((v) => {
-                        response
-                            .status(StatusCodes.OK)
-                            .json({
-                                msg: `User ${name} posted comment for movie ${movieId} successfully`,
-                            });
+                        response.status(StatusCodes.OK).json({
+                            msg: `User ${name} posted comment for movie ${movieId} successfully`,
+                        });
                     })
                     .catch(next);
             })
@@ -194,11 +192,9 @@ class MovieContorller {
                     throw new NotFoundError(
                         `You don't have any comment on movie ${movieId}`
                     );
-                response
-                    .status(StatusCodes.OK)
-                    .json({
-                        msg: `User ${name} deleted her/his comment on movie ${movieId}`,
-                    });
+                response.status(StatusCodes.OK).json({
+                    msg: `User ${name} deleted her/his comment on movie ${movieId}`,
+                });
             })
             .catch(next);
     }
