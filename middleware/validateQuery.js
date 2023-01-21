@@ -1,140 +1,137 @@
-const Joi = require("joi");
+const Joi = require('joi');
 const { capitalizaFirstLetter } = require('../utils');
-const { BadRequestError } = require("../errors");
-
+const { BadRequestError } = require('../errors');
 
 const validLanguages = {
-    'EN':"English",
-    'FRN':"French",
-    'SPN':'Spanish',
-    'Fin':'Finnish',
-    'JPN':'Japanese',
-    'ITN':'Italian',
-    'GER':'German',
-    'ARZ': 'Arabic',
-    'NOR':'Norwegian',
-    'HIN':'Hindi',
-    'YI':'Yaddish',
-    'RUS':'Russian',
-    'SRP':'Serbian',
-    'POR':'Portuguese',
-    'KOR':'Korean',
-    'CHI':'Chinese',
-    'HRV':'Croatian',
-    'BAQ':'Basque',
-    'THA':'Thai',
-    'SWE':'Swedish',
-    'DUT':'Dutch',
-    'GEO':'Georgian',
-    'GRE':'Greek',
-    'AZE':'Azerbaijani',
-    'HEB':'Hebrew',
-    'POL':'Polish',
-    'MDR':'Mandarin'
+    EN: 'English',
+    FRN: 'French',
+    SPN: 'Spanish',
+    Fin: 'Finnish',
+    JPN: 'Japanese',
+    ITN: 'Italian',
+    GER: 'German',
+    ARZ: 'Arabic',
+    NOR: 'Norwegian',
+    HIN: 'Hindi',
+    YI: 'Yaddish',
+    RUS: 'Russian',
+    SRP: 'Serbian',
+    POR: 'Portuguese',
+    KOR: 'Korean',
+    CHI: 'Chinese',
+    HRV: 'Croatian',
+    BAQ: 'Basque',
+    THA: 'Thai',
+    SWE: 'Swedish',
+    DUT: 'Dutch',
+    GEO: 'Georgian',
+    GRE: 'Greek',
+    AZE: 'Azerbaijani',
+    HEB: 'Hebrew',
+    POL: 'Polish',
+    MDR: 'Mandarin',
 };
 
 const validGenres = [
-    'Drama', 
-    'Comedy', 
-    'Biography', 
-    'Romance', 
-    'Mystery', 
-    'Music', 
-    'Crime', 
-    'Thriller', 
+    'Drama',
+    'Comedy',
+    'Biography',
+    'Romance',
+    'Mystery',
+    'Music',
+    'Crime',
+    'Thriller',
     'Sci-Fi',
-    'Family', 
-    'Adventure', 
-    'Action', 
+    'Family',
+    'Adventure',
+    'Action',
     'Documentary',
-    'Short', 
+    'Short',
     'Western',
-    'Horror', 
-    'News', 
-    'Musical', 
-    'War', 
-    'Animation'
+    'Horror',
+    'News',
+    'Musical',
+    'War',
+    'Animation',
 ];
 
 const validCountries = {
-    "USA":"USA", 
-    "FRA":"France", 
-    "UK":"UK", 
-    "ITA":"Italy", 
-    "DEU":"Germany", 
-    "AUS":"Australia", 
-    "CHN":"China", 
-    "THA":"Thailand", 
-    "CAN":"Canada", 
-    "LUX":"Luxembourg", 
-    "IND":"India", 
-    "IRL":"Ireland", 
-    "JPN":"Japan", 
-    "HKG":"Hong Kong", 
-    "PAN":"Panama", 
-    "SWE":"Sweden", 
-    "ISL":"Iceland", 
-    "PRT":"Portugal", 
-    "SGP":"Singapore", 
-    "SVN":"Slovenia",
-    "VNM":"Vietnam",
-    "BEL":"Belgium",
-    "RUS":"Russia", 
-    "NZL":"New Zealand", 
-    "AUT":"Austria", 
-    "DNK":"Denmark", 
-    "NLD":"Netherlands"
+    USA: 'USA',
+    FRA: 'France',
+    UK: 'UK',
+    ITA: 'Italy',
+    DEU: 'Germany',
+    AUS: 'Australia',
+    CHN: 'China',
+    THA: 'Thailand',
+    CAN: 'Canada',
+    LUX: 'Luxembourg',
+    IND: 'India',
+    IRL: 'Ireland',
+    JPN: 'Japan',
+    HKG: 'Hong Kong',
+    PAN: 'Panama',
+    SWE: 'Sweden',
+    ISL: 'Iceland',
+    PRT: 'Portugal',
+    SGP: 'Singapore',
+    SVN: 'Slovenia',
+    VNM: 'Vietnam',
+    BEL: 'Belgium',
+    RUS: 'Russia',
+    NZL: 'New Zealand',
+    AUT: 'Austria',
+    DNK: 'Denmark',
+    NLD: 'Netherlands',
 };
 
-const validTypes = [ 
-    'movie', 
-    'series' 
-];
+const validTypes = ['movie', 'series'];
 
 const QuerySchema = Joi.object({
     languages: Joi.string()
         .trim()
         .uppercase()
         .valid(...Object.getOwnPropertyNames(validLanguages)),
-    
-    genres: Joi.array()
-        .items(Joi.string().valid(...validGenres)),
-    
+
+    genres: Joi.array().items(Joi.string().valid(...validGenres)),
+
     year: Joi.number()
         .integer()
-        .min(1917).message("Year must be greater thant 1917")
-        .max(new Date().getFullYear()).message(`Year must be less than ${new Date().getFullYear()}`),
-    
-    countries: Joi.array()
-        .items(Joi.string().valid(...Object.getOwnPropertyNames(validCountries))),
-    
+        .min(1917)
+        .message('Year must be greater thant 1917')
+        .max(new Date().getFullYear())
+        .message(`Year must be less than ${new Date().getFullYear()}`),
+
+    countries: Joi.array().items(
+        Joi.string().valid(...Object.getOwnPropertyNames(validCountries))
+    ),
+
     type: Joi.string()
         .trim()
         .lowercase()
         .valid(...validTypes),
-    
-    directors: Joi.string()
-        .trim()
-        .min(1)
-        .max(34),
-    
-    query: Joi.string()
-        .trim()
-        .min(1)
-        .max(34)
-})
 
+    directors: Joi.string().trim().min(1).max(34),
 
-const middleware = function(request, response, next) {
+    query: Joi.string().trim().min(1).max(34),
+});
+
+const middleware = function (request, response, next) {
     let { p, lan, gen, year, countries, type, dir, q } = request.query;
 
     request.query.p = parseInt(p) ? parseInt(p) : 0;
 
-    let QueryObject = {}
-    if (lan) QueryObject.languages = lan;  
-    if (gen) QueryObject.genres = gen.split(',').map(g => capitalizaFirstLetter(g.trim()));
+    let QueryObject = {};
+    if (lan) QueryObject.languages = lan;
+    if (gen)
+        QueryObject.genres = gen
+            .split(',')
+            .map((g) => capitalizaFirstLetter(g.trim()));
     if (year) QueryObject.year = parseInt(year);
-    if (countries) QueryObject.countries = countries.split(',').map(v => v.trim().toUpperCase());
+    if (countries)
+        QueryObject.countries = countries
+            .split(',')
+            .map((v) => v.trim().toUpperCase());
     if (type) QueryObject.type = type;
     if (dir) QueryObject.directors = dir;
     if (q) QueryObject.query = q;
@@ -146,34 +143,35 @@ const middleware = function(request, response, next) {
     }
 
     let FilterObject = {};
-    const validQueries = Object.getOwnPropertyNames(value);        
+    const validQueries = Object.getOwnPropertyNames(value);
     if (validQueries.includes('languages')) {
         FilterObject.languages = validLanguages[value.languages];
     }
-    
+
     if (validQueries.includes('genres')) {
         FilterObject.genres = { $all: value.genres };
     }
 
     if (validQueries.includes('countries')) {
-        FilterObject.countries = { $all: value.countries.map(v => validCountries[v]) };
+        FilterObject.countries = {
+            $all: value.countries.map((v) => validCountries[v]),
+        };
     }
-    
+
     if (validQueries.includes('type')) {
         FilterObject.type = value.type;
     }
-    
+
     if (validQueries.includes('directors')) {
         FilterObject.directors = new RegExp(value.directors, 'i');
     }
-    
+
     if (validQueries.includes('query')) {
         FilterObject.$text = { $search: `"${value.query}"` };
     }
 
     request.Filters = FilterObject;
     next();
-}
-
+};
 
 module.exports = middleware;

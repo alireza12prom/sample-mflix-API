@@ -11,5 +11,5 @@ module.exports = {
     validateQueriesMiddleware,
     validateParamsMiddleware,
     JwtMiddleware,
-    validateBodyMiddleware
-}
+    validateBodyMiddleware,
+};

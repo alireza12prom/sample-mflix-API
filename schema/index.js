@@ -1,4 +1,4 @@
-const { Users, client, Admins } = require("../database");
+const { Users, client, Admins } = require('../database');
 const DB = process.env.MONGO_DB;
 
 // schemas
@@ -8,19 +8,23 @@ class Schema {
     constructor() {}
 
     static setup(schema, collIns) {
-        return client.db(DB).command({ 
-            collMod: collIns.collectionName,
-            validator: schema
+        return client
+            .db(DB)
+            .command({
+                collMod: collIns.collectionName,
+                validator: schema,
             })
             .catch(() => {
-                console.log(`/!\\ Unable to set schema for collection ${collIns.collectionName}`);
+                console.log(
+                    `/!\\ Unable to set schema for collection ${collIns.collectionName}`
+                );
             });
     }
 }
 
 // start when server connect successfully
 client.on('connected', () => {
-    console.log("*** Setup Schemas ***");
+    console.log('*** Setup Schemas ***');
     Schema.setup(userSchema, Users);
     Schema.setup(userSchema, Admins);
-})
+});

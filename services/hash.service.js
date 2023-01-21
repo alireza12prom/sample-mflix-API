@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
 
-
 class HashService {
     constructor() {}
 

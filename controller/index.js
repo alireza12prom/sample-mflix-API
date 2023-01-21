@@ -9,5 +9,5 @@ module.exports = {
     movieController,
     authenticateController,
     usersController,
-    registerController
-}
+    registerController,
+};

@@ -3,7 +3,7 @@
 const JwtService = require('./jwt.service');
 const HashService = require('./hash.service');
 
-module.exports = { 
+module.exports = {
     JwtService,
-    HashService
-}
+    HashService,
+};

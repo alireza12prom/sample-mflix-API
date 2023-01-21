@@ -8,5 +8,5 @@ class NotFoundError extends CustomAPIErrors {
 }
 
 module.exports = {
-    NotFoundError
-}
+    NotFoundError,
+};

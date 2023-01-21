@@ -1,5 +1,5 @@
-const { ObjectId } = require("mongodb");
-const { BadRequestError } = require("../errors");
+const { ObjectId } = require('mongodb');
+const { BadRequestError } = require('../errors');
 
 class Middleware {
     constructor() {}

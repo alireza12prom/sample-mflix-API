@@ -1,7 +1,6 @@
-
 const { NotFoundError } = require('./NotFound');
 const { BadRequestError } = require('./BadRequest');
-const { UnauthorizedError } = require('./Unauthorized')
+const { UnauthorizedError } = require('./Unauthorized');
 const { ForbbidenError } = require('./Forbbiden');
 
 module.exports = {
@@ -9,4 +8,4 @@ module.exports = {
     BadRequestError,
     UnauthorizedError,
     ForbbidenError,
-}
+};

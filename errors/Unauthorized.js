@@ -8,5 +8,5 @@ class UnauthorizedError extends CustomAPIErrors {
 }
 
 module.exports = {
-    UnauthorizedError
-}
+    UnauthorizedError,
+};

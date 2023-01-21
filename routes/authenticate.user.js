@@ -5,6 +5,6 @@ const router = Router();
 
 const { authenticateController } = require('../controller');
 
-router.post('/', authenticateController.authenticate)
+router.post('/', authenticateController.authenticate);
 
 module.exports = router;

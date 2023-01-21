@@ -6,9 +6,11 @@ const router = Router();
 const { registerController } = require('../controller');
 const { validateBodyMiddleware } = require('../middleware');
 
-router.route('/')
+router
+    .route('/')
     .post(
         validateBodyMiddleware.validateBodyOnCreateUser,
-        registerController.register)
+        registerController.register
+    );
 
 module.exports = router;

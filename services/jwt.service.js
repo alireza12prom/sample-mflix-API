@@ -6,8 +6,14 @@ const path = require('path');
 
 const jwtConfig = require('../config/jwt.js');
 
-const publicKey = fs.readFileSync(path.join(path.dirname(__dirname), '/config/pub_key.key'), 'utf-8');
-const privateKey = fs.readFileSync(path.join(path.dirname(__dirname), '/config/priv_key.key'), 'utf-8');
+const publicKey = fs.readFileSync(
+    path.join(path.dirname(__dirname), '/config/pub_key.key'),
+    'utf-8'
+);
+const privateKey = fs.readFileSync(
+    path.join(path.dirname(__dirname), '/config/priv_key.key'),
+    'utf-8'
+);
 
 class JwtService {
     constructor() {}
@@ -15,11 +21,11 @@ class JwtService {
     sign(payload) {
         return jwt.sign(payload, privateKey, jwtConfig.options);
     }
-    
+
     verify(token) {
-        try{
+        try {
             return jwt.verify(token, publicKey, jwtConfig.options);
-        } catch(error) {
+        } catch (error) {
             return false;
         }
     }

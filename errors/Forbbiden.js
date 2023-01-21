@@ -8,5 +8,5 @@ class ForbbidenError extends CustomAPIErrors {
 }
 
 module.exports = {
-    ForbbidenError
-}
+    ForbbidenError,
+};
