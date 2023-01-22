@@ -1,5 +1,4 @@
 const Joi = require('joi');
-const { capitalizaFirstLetter } = require('../utils');
 const { BadRequestError } = require('../errors');
 const { CURSOR_FLAGS } = require('mongodb');
 
@@ -99,21 +98,65 @@ const paginationSchema = Joi.object({
         .insensitive()
         .empty()
         .default(null)
-        .valid('next', 'prev', 'first', 'last', null),
+        .valid('first', 'last', null),
+});
+
+const filterSchema = Joi.object({
+    languages: Joi.string()
+        .uppercase()
+        .empty()
+        .custom((v, helper) =>
+            validLanguages[v]
+                ? validLanguages[v]
+                : helper.message('`lan` must be a language code')
+        )
+        .default(null),
+    genres: Joi.string()
+        .insensitive()
+        .empty()
+        .valid(...validGenres)
+        .default(null),
+    year: Joi.alternatives(Joi.number().integer().min(1890).max(2050)).default(
+        null
+    ),
+    countries: Joi.string()
+        .uppercase()
+        .empty()
+        .custom((v, helper) =>
+            validCountries[v]
+                ? validCountries[v]
+                : helper.message('`cnt` must be a contry code')
+        )
+        .default(null),
+    q: Joi.string().trim().empty().default(null),
 });
 
 const middleware = function (request, response, next) {
-    let { page, per_page, rel } = request.query;
-
     let validation;
     const newQueryObject = {};
 
     // pagination query params
+    let { page, per_page, rel } = request.query;
+
     validation = paginationSchema.validate({ page, per_page, rel });
     if (validation.error)
         throw new BadRequestError(validation.error.details[0].message);
-
     Object.assign(newQueryObject, validation.value);
+
+    // filter query params
+    let { lan, gen, year, cnt, q } = request.query;
+
+    validation = filterSchema.validate({
+        languages: lan,
+        genres: gen,
+        year: year,
+        countries: cnt,
+        q: q,
+    });
+    if (validation.error)
+        throw new BadRequestError(validation.error.details[0].message);
+    Object.assign(newQueryObject, validation.value);
+
     request.query = newQueryObject;
     next();
 };

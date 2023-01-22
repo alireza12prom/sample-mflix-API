@@ -8,18 +8,13 @@ class MovieContorller {
     /**
      *  Pagination queries:
      *      page, pre_page, rel
-     *
-     *  lan: language
-     *  gen: genres,
-     *  year: year
-     *  countries:countries
-     *  type: type,
-     *  dir: directors
-     *  q: search by title and fullplot
+     *  Filter queries:
+     *      lan, gen, year, cnt
+     *  Search query:`
+     *      q
      */
     async getAllMovies(request, response) {
         let { page, per_page, rel } = request.query;
-        let Sorts = { $natural: 1 };
         let Projection = {
             tomatoes: 0,
             awards: 0,
@@ -30,6 +25,7 @@ class MovieContorller {
         };
 
         // pagination
+        let Sorts = {};
         let skip, limit;
         switch (rel) {
             case 'first':
@@ -41,24 +37,24 @@ class MovieContorller {
                 limit = (page + 1) * per_page;
                 Sorts.$natural = -1;
                 break;
-            case 'next':
-                skip = (page + 1) * per_page;
-                limit = per_page;
-                break;
-            case 'prev':
-                // NOTE: if page was 0, we don't have any prev page to return
-                skip = (page == 0 ? 0 : page - 1) * per_page;
-                limit = per_page;
-                break;
             default:
                 skip = page * per_page;
                 limit = per_page;
         }
 
-        console.log('limit: ', limit, 'skip: ', skip);
-        console.log('*** Sort: ', Sorts, ' ***');
+        // Filtering
+        let Filters = {};
+        let { languages, genres, year, countries, q } = request.query;
 
-        let movies = await Movies.find({})
+        if (q) Filters.$text = { $search: `"${q}"` };
+        if (languages) Filters.languages = languages;
+        if (genres) Filters.genres = genres;
+        if (countries) Filters.countries = countries;
+        if (year) Filters.year = year;
+
+        console.log('*** Filter: ', Filters, ' ***');
+
+        let movies = await Movies.find({ ...Filters })
             .sort(Sorts)
             .project(Projection)
             .skip(skip)
