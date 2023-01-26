@@ -1,199 +1,181 @@
-const { Movies, Comments, Likes } = require('../database');
+const { Movies, Comments, Likes, Users, client } = require('../database');
 const { StatusCodes } = require('http-status-codes');
-const { NotFoundError, BadRequestError } = require('../errors');
 const { ObjectId } = require('mongodb');
+// FIXME: lastUpdate does not update when update a document
+
+const {
+  NotFoundError,
+  BadRequestError,
+  InternalServerError,
+} = require('../errors');
+
+const {
+  MovieNotFoundError,
+  AlreadyExistsError,
+  CommentNotFoundError,
+  LikeNotFoundError,
+} = require('../database/error');
 
 class MovieContorller {
-    constructor() {}
-    /**
-     *  Pagination queries:
-     *      page, pre_page, rel
-     *  Filter queries:
-     *      lan, gen, year, cnt
-     *  Search query:`
-     *      q
-     */
-    async getAllMovies(request, response) {
-        let { page, per_page, rel } = request.query;
-        let Projection = {
-            tomatoes: 0,
-            awards: 0,
-            fullplot: 0,
-            poster: 0,
-            lastupdated: 0,
-            comments: 0,
-        };
+  constructor() {}
+  /**
+   *  Pagination queries:
+   *      page, pre_page, rel
+   *  Filter queries:
+   *      lan, gen, year, cnt
+   *  Search query:`
+   *      q
+   */
+  async getAllMovies(request, response) {
+    let { page, per_page, rel } = request.query;
+    let Projection = {
+      tomatoes: 0,
+      awards: 0,
+      fullplot: 0,
+      poster: 0,
+      lastupdated: 0,
+    };
 
-        // pagination
-        let Sorts = {};
-        let skip, limit;
-        switch (rel) {
-            case 'first':
-                skip = 0;
-                limit = (page + 1) * per_page;
-                break;
-            case 'last':
-                skip = 0;
-                limit = (page + 1) * per_page;
-                Sorts.$natural = -1;
-                break;
-            default:
-                skip = page * per_page;
-                limit = per_page;
-        }
-
-        // Filtering
-        let Filters = {};
-        let { languages, genres, year, countries, q } = request.query;
-
-        if (q) Filters.$text = { $search: `"${q}"` };
-        if (languages) Filters.languages = languages;
-        if (genres) Filters.genres = genres;
-        if (countries) Filters.countries = countries;
-        if (year) Filters.year = year;
-
-        console.log('*** Filter: ', Filters, ' ***');
-
-        let movies = await Movies.find({ ...Filters })
-            .sort(Sorts)
-            .project(Projection)
-            .skip(skip)
-            .limit(limit)
-            .toArray();
-
-        if (!movies.length) throw new NotFoundError('Movie Not Founded');
-        response.status(StatusCodes.OK).json({ movies, n: movies.length });
+    // pagination
+    let Sorts = {};
+    let skip, limit;
+    switch (rel) {
+      case 'first':
+        skip = 0;
+        limit = (page + 1) * per_page;
+        break;
+      case 'last':
+        skip = 0;
+        limit = (page + 1) * per_page;
+        Sorts.$natural = -1;
+        break;
+      default:
+        skip = page * per_page;
+        limit = per_page;
     }
 
-    getSingleMovie(request, response, next) {
-        const { movieId } = request.params;
+    // Filtering
+    let Filters = {};
+    let { languages, genres, year, countries, q } = request.query;
 
-        let movie = Movies.findOne(
-            { _id: movieId },
-            { lastupdated: 0, tomatoes: 0, poster: 0 }
-        );
-        let comments = Comments.find({ movie_id: movieId }).toArray();
-        let likes = Likes.find({ movie_id: movieId }).toArray();
-        Promise.all([movie, comments, likes])
-            .then(([movie, comments, likes]) => {
-                if (!movie) throw new NotFoundError('Movie not found');
+    if (q) Filters.$text = { $search: `"${q}"` };
+    if (languages) Filters.languages = languages;
+    if (genres) Filters.genres = genres;
+    if (countries) Filters.countries = countries;
+    if (year) Filters.year = year;
 
-                movie.num_mflix_comments = comments.length;
-                movie.comments = comments;
-                movie.likes = likes.length;
-                response.status(StatusCodes.OK).json({ movie: movie });
-            })
-            .catch(next);
+    console.log('*** Filter: ', Filters, ' ***');
+
+    let movies = await Movies.find({ ...Filters })
+      .sort(Sorts)
+      .project(Projection)
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    if (!movies.length) throw new NotFoundError('Movie Not Founded');
+    response.status(StatusCodes.OK).json({ movies, n: movies.length });
+  }
+
+  async getSingleMovie(request, response) {
+    const { movieId } = request.params;
+
+    // FIXME: comments does not returned
+    const [movie] = await Promise.all([
+      Movies.findOne(
+        { _id: movieId },
+        { lastupdated: 0, tomatoes: 0, poster: 0 }
+      ),
+    ]);
+
+    if (!movie) throw new NotFoundError('Movie not found');
+
+    response.status(StatusCodes.OK);
+    response.json({
+      ...movie,
+    });
+  }
+
+  async likeMovie(request, response) {
+    const {
+      user: { sub, name },
+      params: { movieId },
+    } = request;
+
+    try {
+      await Likes.likeMovie(new ObjectId(sub), new ObjectId(movieId));
+
+      response.status(StatusCodes.OK);
+      response.json({ msg: `OK` });
+    } catch (error) {
+      if (error instanceof AlreadyExistsError)
+        throw new BadRequestError('You have already liked this movie');
+      else if (error instanceof MovieNotFoundError)
+        throw new BadRequestError('Movie not found');
+      else throw new InternalServerError(`Database occurred error`);
     }
+  }
 
-    likeMovie(request, response, next) {
-        const {
-            user: { sub, name },
-            params: { movieId },
-        } = request;
+  async unlikeMovie(request, response) {
+    const {
+      user: { sub },
+      params: { movieId },
+    } = request;
 
-        const movie = Movies.findOne({ _id: movieId });
-        const user = Likes.findOne({
-            movie_id: movieId,
-            user_id: new ObjectId(sub),
-        });
+    try {
+      await Likes.unlikeMovie(new ObjectId(sub), new ObjectId(movieId));
 
-        Promise.all([movie, user])
-            .then(([movie, user]) => {
-                if (user) throw new BadRequestError('Already liked');
-                if (!movie)
-                    throw new NotFoundError(`Movie ${movieId} not found`);
-
-                Likes.insertOne({
-                    user_id: new ObjectId(sub),
-                    movie_id: movie._id,
-                })
-                    .then((v) => {
-                        response.status(StatusCodes.OK).json({
-                            msg: `User ${name} like movie ${movieId} successfully`,
-                        });
-                    })
-                    .catch(next);
-            })
-            .catch(next);
+      response.status(StatusCodes.OK);
+      response.json({ msg: 'OK' });
+    } catch (error) {
+      if (error instanceof LikeNotFoundError)
+        throw new InternalServerError(`You haven't like this movie`);
+      else if (error instanceof MovieNotFoundError)
+        throw new BadRequestError(`Movie not found`);
+      else throw new InternalServerError(`Database occurred error`);
     }
+  }
 
-    unlikeMovie(request, response, next) {
-        const {
-            user: { sub, name },
-            params: { movieId },
-        } = request;
+  async postComment(request, response) {
+    const {
+      user: { name, email },
+      params: { movieId },
+      body: { text },
+    } = request;
 
-        Likes.findOneAndDelete({
-            movie_id: movieId,
-            user_id: new ObjectId(sub),
-        })
-            .then((value) => {
-                if (!value.value)
-                    throw new BadRequestError(
-                        `You didn't like movie ${movieId}`
-                    );
-                response
-                    .status(StatusCodes.OK)
-                    .json({ msg: `User ${name} unlike movie ${movieId}` });
-            })
-            .catch(next);
+    try {
+      await Comments.postComment(new ObjectId(movieId), name, email, text);
+
+      response.status(StatusCodes.OK);
+      response.json({ msg: `OK` });
+    } catch (error) {
+      if (error instanceof MovieNotFoundError)
+        throw new BadRequestError('movie not found');
+      else if (error instanceof AlreadyExistsError)
+        throw new BadRequestError('You have already posted comment');
+      else throw new InternalServerError(`Database occurred error`);
     }
+  }
 
-    postComment(request, response, next) {
-        const {
-            user: { sub, name, email },
-            params: { movieId },
-            body: { text },
-        } = request;
+  async deleteComment(request, response) {
+    const {
+      user: { email },
+      params: { movieId },
+    } = request;
 
-        const movie = Movies.findOne({ _id: movieId });
-        const user = Comments.findOne({
-            movie_id: movieId,
-            usre_id: new ObjectId(sub),
-        });
+    try {
+      await Comments.deleteComment(email, new ObjectId(movieId));
 
-        Promise.all([movie, user])
-            .then(([movie, user]) => {
-                if (!movie)
-                    throw new NotFoundError(`Movie ${movieId} is not found`);
-                if (user) throw new BadRequestError('Already posted comment');
-
-                Comments.insertOne({
-                    name,
-                    email,
-                    text,
-                    movie_id: movieId,
-                    date: new Date(),
-                })
-                    .then((v) => {
-                        response.status(StatusCodes.OK).json({
-                            msg: `User ${name} posted comment for movie ${movieId} successfully`,
-                        });
-                    })
-                    .catch(next);
-            })
-            .catch(next);
+      response.status(StatusCodes.OK);
+      response.json({ msg: `OK` });
+    } catch (error) {
+      if (error instanceof CommentNotFoundError)
+        throw new BadRequestError(`You haven't posted comment`);
+      else if (error instanceof MovieNotFoundError)
+        throw new BadRequestError(`Movie not found`);
+      else throw new InternalServerError(`Database occurred error`);
     }
-
-    deleteComment(request, response, next) {
-        const {
-            user: { name, email },
-            params: { movieId },
-        } = request;
-
-        Comments.findOneAndDelete({ movie_id: movieId, email: email })
-            .then((value) => {
-                if (!value.value)
-                    throw new NotFoundError(
-                        `You don't have any comment on movie ${movieId}`
-                    );
-                response.status(StatusCodes.OK).json({
-                    msg: `User ${name} deleted her/his comment on movie ${movieId}`,
-                });
-            })
-            .catch(next);
-    }
+  }
 }
 
 module.exports = new MovieContorller();

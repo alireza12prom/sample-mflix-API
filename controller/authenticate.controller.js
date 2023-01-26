@@ -3,6 +3,8 @@ const { Users, Admins } = require('../database');
 const { UnauthorizedError } = require('../errors');
 const { JwtService } = require('../services');
 
+// FIXME: authentication when user already have token
+
 class AuthenticateController {
     constructor() {}
 

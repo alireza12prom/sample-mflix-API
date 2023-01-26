@@ -7,9 +7,9 @@ const JwtMiddleware = require('./jwt.middleware');
 const validateBodyMiddleware = require('./validateBody');
 
 module.exports = {
-    errorHandlerMiddleware,
-    validateQueriesMiddleware,
-    validateParamsMiddleware,
-    JwtMiddleware,
-    validateBodyMiddleware,
+  errorHandlerMiddleware,
+  validateQueriesMiddleware,
+  validateParamsMiddleware,
+  JwtMiddleware,
+  validateBodyMiddleware,
 };

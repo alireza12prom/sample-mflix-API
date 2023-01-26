@@ -4,32 +4,24 @@ const { BadRequestError } = require('../errors');
 const { HashService } = require('../services');
 
 class RegisterController {
-    constructor() {}
+  constructor() {}
 
-    register(request, response, next) {
-        const { name, email, password } = request.body;
+  async register(request, response) {
+    const { name, email, password } = request.body;
 
-        const user = Users.findOne({ email: email });
-        const admin = Admins.findOne({ email: email });
+    const [user, admin] = await Promise.all([
+      Users.findOne({ email }),
+      Admins.findOne({ email }),
+    ]);
 
-        return Promise.all([user, admin])
-            .then(([user, admin]) => {
-                if (user || admin)
-                    throw new BadRequestError(
-                        `Email ${email} already registred`
-                    );
+    if (user || admin)
+      throw new BadRequestError(`Email ${email} already registred`);
 
-                const hashedPass = HashService.hash(password);
-                Users.insertOne({ name, email, password: hashedPass })
-                    .then((v) => {
-                        response
-                            .status(StatusCodes.CREATED)
-                            .json({ user: { name, email } });
-                    })
-                    .catch(next);
-            })
-            .catch(next);
-    }
+    const hashedPass = HashService.hash(password);
+    await Users.insertOne({ name, email, password: hashedPass });
+    response.status(StatusCodes.CREATED);
+    response.json({ user: { name, email } });
+  }
 }
 
 module.exports = new RegisterController();

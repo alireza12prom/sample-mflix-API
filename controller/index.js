@@ -6,8 +6,8 @@ const usersController = require('./users.controller');
 const registerController = require('./register.controller');
 
 module.exports = {
-    movieController,
-    authenticateController,
-    usersController,
-    registerController,
+  movieController,
+  authenticateController,
+  usersController,
+  registerController,
 };

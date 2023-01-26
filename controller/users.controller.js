@@ -1,117 +1,94 @@
 'use strict';
 
 const { StatusCodes } = require('http-status-codes');
-const Joi = require('joi');
 const { Users } = require('../database');
 const { NotFoundError, BadRequestError } = require('../errors');
 
 class UsersController {
-    constructor() {}
+  constructor() {}
 
-    exists(request, response, next) {
-        const {
-            params: { userId },
-        } = request;
+  async exists(request, response) {
+    const {
+      params: { userId },
+    } = request;
 
-        return Users.countDocuments({ _id: userId })
-            .then((n) => {
-                if (!n) throw new NotFoundError(`User ${userId} is not found`);
-                response.status(StatusCodes.NO_CONTENT).send();
-            })
-            .catch(next);
-    }
+    const { valueOf } = await Users.countDocuments({ _id: userId });
+    if (!valueOf) throw new NotFoundError(`User ${userId} is not found`);
+    response.status(StatusCodes.NO_CONTENT);
+    response.send();
+  }
 
-    find(request, response, next) {
-        const {
-            params: { userId },
-        } = request;
+  async find(request, response) {
+    const {
+      params: { userId },
+    } = request;
 
-        return Users.findOne({ _id: userId })
-            .then((user) => {
-                if (!user)
-                    throw new NotFoundError(`User ${userId} is not found`);
-                response.status(StatusCodes.OK).json({ user: user });
-            })
-            .catch(next);
-    }
+    const user = await Users.findOne({ _id: userId });
+    if (!user) throw new NotFoundError(`User ${userId} is not found`);
 
-    all(request, response, next) {
-        return Users.find()
-            .toArray()
-            .then((users) => {
-                response.status(StatusCodes.OK).json({ users });
-            })
-            .catch(next);
-    }
+    response.status(StatusCodes.OK);
+    response.json({ user: user });
+  }
 
-    create(request, response, next) {
-        const { name, email } = request.body;
+  async all(request, response) {
+    const users = await Users.find().toArray();
+    response.status(StatusCodes.OK).json({ users });
+  }
 
-        let user = Users.findOne({ email: email })
-            .then((v) => {
-                if (v)
-                    throw new BadRequestError(`User ${email} already exists`);
+  async create(request, response) {
+    const { name, email } = request.body;
 
-                Users.insertOne({ name, email })
-                    .then((v) => {
-                        response
-                            .status(StatusCodes.CREATED)
-                            .json({ msg: `New user ${v.insertedId} created` });
-                    })
-                    .catch(next);
-            })
-            .catch(next);
-    }
+    let user = await Users.findOne({ email: email });
+    if (user) throw new BadRequestError(`User ${email} already exists`);
 
-    replace(request, response, next) {
-        const {
-            body: { name, email },
-            params: { userId },
-        } = request;
+    const result = await Users.insertOne({ name, email });
+    response.status(StatusCodes.CREATED);
+    response.json({ msg: `New user ${result.insertedId} created` });
+  }
 
-        return Users.findOneAndReplace(
-            { _id: userId },
-            { name, email },
-            { returnDocument: 'after' }
-        )
-            .then((v) => {
-                if (!v.value)
-                    throw new NotFoundError(`User ${userId} is not found`);
-                response.status(StatusCodes.OK).json({ new_user: v.value });
-            })
-            .catch(next);
-    }
+  async replace(request, response) {
+    const {
+      body: { name, email },
+      params: { userId },
+    } = request;
 
-    update(request, response, next) {
-        const {
-            body: { name, email },
-            params: { userId },
-        } = request;
+    let { value } = await Users.findOneAndReplace(
+      { _id: userId },
+      { name, email },
+      { returnDocument: 'after' }
+    );
+    if (!value) throw new NotFoundError(`User ${userId} is not found`);
 
-        return Users.findOneAndUpdate(
-            { _id: userId },
-            { $set: { name: name, email: email } },
-            { returnDocument: 'after', ignoreUndefined: true }
-        )
-            .then((v) => {
-                if (!v.value)
-                    throw new NotFoundError(`User ${userId} is not found`);
-                response.status(StatusCodes.OK).json({ updated_user: v.value });
-            })
-            .catch(next);
-    }
+    response.status(StatusCodes.OK);
+    response.json({ new_user: value });
+  }
 
-    delete(request, response, next) {
-        const { userId } = request.params;
+  async update(request, response) {
+    const {
+      body: { name, email },
+      params: { userId },
+    } = request;
 
-        return Users.findOneAndDelete({ _id: userId })
-            .then((v) => {
-                if (!v.value)
-                    throw new NotFoundError(`Usre ${userId} is not found`);
-                response.status(StatusCodes.OK).json({ deleted_user: v.value });
-            })
-            .catch(next);
-    }
+    const { value } = await Users.findOneAndUpdate(
+      { _id: userId },
+      { $set: { name: name, email: email } },
+      { returnDocument: 'after', ignoreUndefined: true }
+    );
+    if (!value) throw new NotFoundError(`User ${userId} is not found`);
+
+    response.status(StatusCodes.OK);
+    response.json({ updated_user: value });
+  }
+
+  async delete(request, response) {
+    const { userId } = request.params;
+
+    const { value } = await Users.findOneAndDelete({ _id: userId });
+    if (!value) throw new NotFoundError(`Usre ${userId} is not found`);
+
+    response.status(StatusCodes.OK);
+    response.json({ deleted_user: value });
+  }
 }
 
 module.exports = new UsersController();

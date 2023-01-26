@@ -8,47 +8,47 @@ const passwordSchema = Joi.string().trim().alphanum();
 const emailSchema = Joi.string().trim().lowercase().email();
 
 const newUserSchema = Joi.object({
-    name: nameSchema.min(3).required(),
-    email: emailSchema.required(),
-    password: passwordSchema.min(10).required(),
+  name: nameSchema.min(3).required(),
+  email: emailSchema.required(),
+  password: passwordSchema.min(10).required(),
 });
 
 const updateUserSchema = Joi.object({
-    name: nameSchema.min(3),
-    email: emailSchema,
-    password: passwordSchema,
+  name: nameSchema.min(3),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 class ValidateBody {
-    constructor() {}
+  constructor() {}
 
-    validateBodyOnUpdateUser(request, response, next) {
-        const { name, email, password } = request.body;
+  validateBodyOnUpdateUser(request, response, next) {
+    const { name, email, password } = request.body;
 
-        const { error, value } = updateUserSchema.validate({
-            name,
-            email,
-            password,
-        });
-        if (error) throw new BadRequestError(`${error.details[0].message}`);
+    const { error, value } = updateUserSchema.validate({
+      name,
+      email,
+      password,
+    });
+    if (error) throw new BadRequestError(`${error.details[0].message}`);
 
-        request.body = value;
-        next();
-    }
+    request.body = value;
+    next();
+  }
 
-    validateBodyOnCreateUser(request, response, next) {
-        const { name, email, password } = request.body;
+  validateBodyOnCreateUser(request, response, next) {
+    const { name, email, password } = request.body;
 
-        const { error, value } = newUserSchema.validate({
-            name,
-            email,
-            password,
-        });
-        if (error) throw new BadRequestError(error.details[0].message);
+    const { error, value } = newUserSchema.validate({
+      name,
+      email,
+      password,
+    });
+    if (error) throw new BadRequestError(error.details[0].message);
 
-        request.body = value;
-        next();
-    }
+    request.body = value;
+    next();
+  }
 }
 
 module.exports = new ValidateBody();
