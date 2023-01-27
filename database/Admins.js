@@ -1,4 +1,10 @@
 const { model } = require('mongoose');
-const { userSchema } = require('./schema');
+const { adminSchema } = require('./schema');
 
-module.exports = model('admins', userSchema);
+class AdminsModel {
+  constructor() {
+    this.client = model('admins', adminSchema);
+  }
+}
+
+module.exports = new AdminsModel().client;
