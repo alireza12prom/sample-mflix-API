@@ -1,3 +1,5 @@
+'use strict';
+
 const { model } = require('mongoose');
 const { adminSchema } = require('./schema');
 

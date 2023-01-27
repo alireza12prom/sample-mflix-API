@@ -4,7 +4,6 @@ const { StatusCodes } = require('http-status-codes');
 const { Users, Admins } = require('../database');
 const { NotFoundError, BadRequestError } = require('../errors');
 const { HashService } = require('../services');
-const registerController = require('./register.controller');
 
 class UsersController {
   constructor() {}

@@ -10,6 +10,7 @@ class ErrorHandlerMiddleware {
     };
 
     response.status(ErrorObject.statusCode).json({ msg: ErrorObject.message });
+    console.log('/!\\ ERROR: (' + error + ')');
   }
 
   routeNotFound(request, response, next) {
