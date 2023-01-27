@@ -1,6 +1,11 @@
 'use strict';
 
-const { ForbbidenError, UnauthorizedError } = require('../errors');
+const { Tokens } = require('../database');
+const {
+  ForbbidenError,
+  UnauthorizedError,
+  BadRequestError,
+} = require('../errors');
 const { JwtService } = require('../services');
 
 class JwtMiddleware {
@@ -22,6 +27,14 @@ class JwtMiddleware {
       const foundRole = decoded.role === role;
       return foundRole ? next() : next(new ForbbidenError('Access Denied'));
     };
+  }
+
+  async accessToAuth(request, response, next) {
+    const { email } = request.body;
+
+    if (await Tokens.findOne({ email }))
+      throw new BadRequestError(`You have already authenticated`);
+    next();
   }
 }
 
