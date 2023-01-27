@@ -13,7 +13,7 @@ const registerRoute = require('./register.user');
 
 router.use('/api/v1/movies', JwtMiddleware.verify, moviesRoute);
 router.use('/auth', authenticateUserRout);
-router.use('/users', usersRoute);
+router.use('/users', JwtMiddleware.verify, usersRoute);
 router.use('/register', registerRoute);
 
 module.exports = router;

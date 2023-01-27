@@ -9,7 +9,7 @@ const { validateBodyMiddleware } = require('../middleware');
 router
   .route('/')
   .post(
-    validateBodyMiddleware.validateBodyOnCreateUser,
+    validateBodyMiddleware.validateBodyOnRegisterUser,
     registerController.register
   );
 
