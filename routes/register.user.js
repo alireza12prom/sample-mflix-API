@@ -7,10 +7,10 @@ const { registerController } = require('../controller');
 const { validateBodyMiddleware } = require('../middleware');
 
 router
-    .route('/')
-    .post(
-        validateBodyMiddleware.validateBodyOnCreateUser,
-        registerController.register
-    );
+  .route('/')
+  .post(
+    validateBodyMiddleware.validateBodyOnCreateUser,
+    registerController.register
+  );
 
 module.exports = router;

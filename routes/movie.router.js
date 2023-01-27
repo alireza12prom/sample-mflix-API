@@ -5,8 +5,8 @@ const router = Router();
 
 const { movieController } = require('../controller');
 const {
-    validateQueriesMiddleware,
-    validateParamsMiddleware,
+  validateQueriesMiddleware,
+  validateParamsMiddleware,
 } = require('../middleware');
 
 router.route('/').get(validateQueriesMiddleware, movieController.getAllMovies);
@@ -14,14 +14,15 @@ router.route('/').get(validateQueriesMiddleware, movieController.getAllMovies);
 router.route('/:movieId').get(movieController.getSingleMovie);
 
 router
-    .route('/:movieId/like')
-    .post(movieController.likeMovie)
-    .delete(movieController.unlikeMovie);
+  .route('/:movieId/like')
+  .post(movieController.likeMovie)
+  .delete(movieController.unlikeMovie);
 
 router
-    .route('/:movieId/comment')
-    .post(movieController.postComment)
-    .delete(movieController.deleteComment);
+  .route('/:movieId/comment')
+  .post(movieController.postComment)
+  .delete(movieController.deleteComment)
+  .patch(movieController.editComment);
 
 router.param('movieId', validateParamsMiddleware.validateObjectId);
 module.exports = router;
