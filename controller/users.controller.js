@@ -1,8 +1,10 @@
 'use strict';
 
 const { StatusCodes } = require('http-status-codes');
-const { Users } = require('../database');
+const { Users, Admins } = require('../database');
 const { NotFoundError, BadRequestError } = require('../errors');
+const { HashService } = require('../services');
+const registerController = require('./register.controller');
 
 class UsersController {
   constructor() {}
@@ -12,10 +14,11 @@ class UsersController {
       params: { userId },
     } = request;
 
-    const { valueOf } = await Users.countDocuments({ _id: userId });
-    if (!valueOf) throw new NotFoundError(`User ${userId} is not found`);
+    const target = await Users.exists({ _id: userId });
+    if (!target) throw new NotFoundError();
+
     response.status(StatusCodes.NO_CONTENT);
-    response.send();
+    response.end();
   }
 
   async find(request, response) {
@@ -23,58 +26,53 @@ class UsersController {
       params: { userId },
     } = request;
 
-    const user = await Users.findOne({ _id: userId });
-    if (!user) throw new NotFoundError(`User ${userId} is not found`);
+    const user = await Users.findById({ _id: userId });
+    if (!user) throw new NotFoundError(`User not found`);
 
     response.status(StatusCodes.OK);
-    response.json({ user: user });
+    response.json({ user });
   }
 
   async all(request, response) {
-    const users = await Users.find().toArray();
+    const users = await Users.find({}, { password: 0 });
     response.status(StatusCodes.OK).json({ users });
   }
 
   async create(request, response) {
-    const { name, email } = request.body;
+    const { name, email, password, as } = request.body;
 
-    let user = await Users.findOne({ email: email });
-    if (user) throw new BadRequestError(`User ${email} already exists`);
+    const [user, admin] = await Promise.all([
+      Users.findOne({ email }),
+      Admins.findOne({ email }),
+    ]);
 
-    const result = await Users.insertOne({ name, email });
-    response.status(StatusCodes.CREATED);
-    response.json({ msg: `New user ${result.insertedId} created` });
-  }
+    if (user || admin)
+      throw new BadRequestError(`Email ${email} already registred`);
 
-  async replace(request, response) {
-    const {
-      body: { name, email },
-      params: { userId },
-    } = request;
-
-    let { value } = await Users.findOneAndReplace(
-      { _id: userId },
-      { name, email },
-      { returnDocument: 'after' }
-    );
-    if (!value) throw new NotFoundError(`User ${userId} is not found`);
-
-    response.status(StatusCodes.OK);
-    response.json({ new_user: value });
+    const hashedPass = HashService.hash(password);
+    if (as === 'USER') {
+      await Users.create({ name, email, password: hashedPass });
+      response.status(StatusCodes.CREATED);
+    } else {
+      await Admins.create({ name, email, password: hashedPass });
+      response.status(StatusCodes.CREATED);
+    }
+    response.json({ user: { name, email, as } });
   }
 
   async update(request, response) {
     const {
-      body: { name, email },
+      body: { name, email, password },
       params: { userId },
     } = request;
 
-    const { value } = await Users.findOneAndUpdate(
+    const hashedPass = password ? HashService.hash(password) : password;
+    const value = await Users.findOneAndUpdate(
       { _id: userId },
-      { $set: { name: name, email: email } },
+      { $set: { name: name, email: email, password: hashedPass } },
       { returnDocument: 'after', ignoreUndefined: true }
     );
-    if (!value) throw new NotFoundError(`User ${userId} is not found`);
+    if (!value) throw new NotFoundError(`User not found`);
 
     response.status(StatusCodes.OK);
     response.json({ updated_user: value });
@@ -83,11 +81,11 @@ class UsersController {
   async delete(request, response) {
     const { userId } = request.params;
 
-    const { value } = await Users.findOneAndDelete({ _id: userId });
-    if (!value) throw new NotFoundError(`Usre ${userId} is not found`);
+    const target = await Users.findByIdAndDelete({ _id: userId });
+    if (!target) throw new NotFoundError(`Usre not found`);
 
     response.status(StatusCodes.OK);
-    response.json({ deleted_user: value });
+    response.json({ user: target });
   }
 }
 

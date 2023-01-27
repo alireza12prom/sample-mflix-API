@@ -24,7 +24,6 @@ router
   .route('/:userId')
   .head(usersController.exists)
   .get(usersController.find)
-  .put(validateBodyMiddleware.validateBodyOnCreateUser, usersController.replace)
   .patch(
     validateBodyMiddleware.validateBodyOnUpdateUser,
     usersController.update
