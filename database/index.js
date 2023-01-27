@@ -4,6 +4,7 @@ const Comments = require('./Comments');
 const Likes = require('./Likes');
 const Admins = require('./Admins');
 const { client, strat } = require('./connect');
+const Tokens = require('./Tokens');
 
 module.exports = {
   Movies,
@@ -13,4 +14,5 @@ module.exports = {
   Admins,
   client,
   strat,
+  Tokens,
 };
