@@ -1,7 +1,6 @@
 'use strict';
 
 require('dotenv').config();
-require('./schema');
 require('express-async-errors');
 
 const bodyParser = require('body-parser');
@@ -9,7 +8,7 @@ const logger = require('morgan');
 const { errorHandlerMiddleware } = require('./middleware');
 const cors = require('cors');
 const express = require('express');
-const { client } = require('./database');
+const { strat } = require('./database');
 const app = express();
 
 app.use(logger('dev'));
@@ -29,8 +28,6 @@ const port = process.env.PORT;
 const host = process.env.HOST;
 
 app.listen(port, host, async () => {
-    await client.connect();
-    console.log('<< Mongo Connect >>');
-
-    console.log(`http://${host}:${port}`);
+  await strat();
+  console.log(`http://${host}:${port}`);
 });

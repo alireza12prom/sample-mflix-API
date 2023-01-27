@@ -1,4 +1,4 @@
-const { client } = require('./connect');
-const COLLECTION = 'admins';
+const { model } = require('mongoose');
+const { userSchema } = require('./schema');
 
-module.exports = client.db(process.env.MONGO_DB).collection(COLLECTION);
+module.exports = model('admins', userSchema);
