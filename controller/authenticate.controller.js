@@ -1,40 +1,45 @@
 const { StatusCodes } = require('http-status-codes');
-const { Users, Admins } = require('../database');
+const { Users, Admins, Tokens } = require('../database');
 const { UnauthorizedError } = require('../errors');
 const { JwtService, HashService } = require('../services');
-
-// FIXME: authentication when user already have token
 
 class AuthenticateController {
   constructor() {}
 
-  authenticate(request, response, next) {
+  async authenticate(request, response) {
     const { email, password } = request.body;
 
-    let user = Users.findOne({ email: email });
-    let admin = Admins.findOne({ email: email });
-    Promise.all([user, admin])
-      .then(([user, admin]) => {
-        if (!user && !admin) throw new UnauthorizedError(`User has no account`);
+    // validate email
+    const [user, admin] = await Promise.all([
+      Users.findOne({ email: email }),
+      Admins.findOne({ email: email }),
+    ]);
+    if (!user && !admin) throw new UnauthorizedError(`User has no account`);
 
-        const isMatch = HashService.compare(
-          password,
-          admin ? admin.password : user.password
-        );
-        if (!isMatch) throw new UnauthorizedError(`Password was wrong`);
+    // compare password
+    const hashedPass = admin ? admin.password : user.password;
+    if (!HashService.compare(password, hashedPass))
+      throw new UnauthorizedError(`Password was wrong`);
 
-        let role = user ? 'USER' : 'ADMIN';
-        let name = user ? user.name : admin.name;
-        let id = user ? user._id : admin._id;
-        let token = JwtService.sign({
-          name,
-          email,
-          role: role,
-          sub: id,
-        });
-        response.status(StatusCodes.OK).json({ token });
-      })
-      .catch(next);
+    // create a unique api key and save it in database
+    const keyid = HashService.randomkeyid();
+    await Tokens.create({
+      create_at: new Date(),
+      email,
+      keyid,
+    });
+
+    // create a jwt token and send response
+    const TokenObject = {
+      role: user ? 'USER' : 'ADMIN',
+      name: user ? user.name : admin.name,
+      sub: user ? user._id : admin._id,
+      keyid,
+      email,
+    };
+
+    response.status(StatusCodes.OK);
+    response.json({ token: JwtService.sign(TokenObject) });
   }
 }
 
