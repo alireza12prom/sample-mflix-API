@@ -1,105 +1,142 @@
-### Movie Apis
+### Simple Movie Apis
 
-this is a simple rest api project with express and mongodb sample database.
+Simple rest api by express and mongodb.
 
-> Base url: http://{host}:{port}
+### Register & Auth Endpoints
 
-## Authentication Endpoints
+- register
+  - POST `/register`
+  - Body
+    - name
+    - email
+    - password
+- authetication
 
-| Endpoint  | Method | Description    |
-| --------- | ------ | -------------- |
-| /auth     | Post   | Authentication |
-| /register | Post   | Registeration  |
+  - POST `/auth`
+  - Request Body
+    - email
+    - password
+  - Response Body
 
-### Request body
+    - Bearer token
 
-```
-# /auth
-{
-    email: "john@example.com",
-    password: "john123456"
-}
+### Movie Endpoints
 
-# /register
-{
-    name: "john"
-    email: "john@example.com",
-    password: "john123456"
-}
-```
+- get all movies
 
-<br>
+  - GET `/api/v1/movies`
+  - Queries (Optional)
+    - page
+    - per_page
+    - rel
+    - lan(language)
+    - gen(genre)
+    - year
+    - cnt(country)
+    - q
+  - Request Header
 
-> NOTE: After authenticating, the server return a `JWT` token. this token is valid just fo 12h.
+    - Authorization
 
-## Movie Endpoints
+- get a single movie
 
-| Endpoint            | Method | Description             | Access     | Authorization |
-| ------------------- | ------ | ----------------------- | ---------- | ------------- |
-| /api/v1/movies      | Get    | Get all movies          | User/Admin | Bearer Token  |
-| /api/v1/movie/:id   | Get    | Get a movie             | User/Admin | Bearer Token  |
-| /api/v1/:id/like    | Post   | Like a movie            | User/Admin | Bearer Token  |
-| /api/v1/:id/comment | Delete | Unlike a movie          | User/Admin | Bearer Token  |
-| /api/v1/:id/comment | Post   | Submit a comment        | User/Admin | Bearer Token  |
-| /api/v1/:id/like    | Delete | Delete submited comment | User/Admin | Bearer Token  |
+  - GET `/api/v1/movies/:movieId`
+  - Request Header
 
-### Request body
+    - Authorization
 
-```
-# Post /api/v1/:id/comment
+- like a movie
 
-{
-    test: "Your comment"
-}
-```
+  - POST `/api/v1/movies/:movieId/like`
+  - Request Header
 
-<br>
+    - Authorization
 
-> NOTE: For all request you need to a `JWT` token in header as a `Bearer`.
+- unlike a movie
 
-## User Endpoints
+  - DELETE `/api/v1/movies/:movieId/like`
 
-| Endpoint   | Method | Description                     | Access | Authorization |
-| ---------- | ------ | ------------------------------- | ------ | ------------- |
-| /users     | Get    | Get all users                   | Admin  | Bearer Token  |
-| /users     | Post   | Create a user                   | Admin  | Bearer Token  |
-| /users/:id | Head   | Check user exists or not        | Admin  | Bearer Token  |
-| /users/:id | Get    | Get a single user               | Admin  | Bearer Token  |
-| /users/:id | Put    | Replace all field with new info | Admin  | Bearer Token  |
-| /users/:id | Patch  | Update a specify field          | Admin  | Bearer Token  |
-| /users/:id | Delete | Delete a user                   | Admin  | Bearer Token  |
+  - Request Header
 
-### Request body
+    - Authorization
 
-```
-# Post /users
+- post a comment
 
-{
-    name: "",
-    email:"",
-    password:""
-}
+  - POST `/api/v1/movies/:movieId/comment`
+  - Request Body
 
-# Put /users/:id
+    - text
 
-{
-    name: "",
-    email:""
-}
+  - Request Header
 
-# Patch /users/:id
+    - Authorization
 
-{
-    name: ""
-}
+- delete a comment
 
-#or
+  - DELETE `/api/v1/movies/:movieId/comment`
+  - Request Header
 
-{
-    email:""
-}
-```
+    - Authorization
 
-<br>
+- edit a comment
 
-> NOTE: For all request you need to a `JWT` token in header as a `Bearer`.
+  - PATCH `/api/v1/movies/:movieId/comment`
+  - Request Body
+
+    - text
+
+  - Request Header
+
+    - Authorization
+
+### User Endpoints
+
+- check a user that exists or not
+
+  - HEAD `/user/:userId`
+  - Request Header
+
+    - Authorization
+
+- get all users
+
+  - GET `/user`
+  - Request Header
+
+    - Authorization
+
+- get a single user
+
+  - GET `/user/:userId`
+  - Request Header
+
+    - Authorization
+
+- create a user
+
+  - POST `/user/:userId`
+  - Request Body
+    - name
+    - email
+    - password
+  - Request Header
+
+    - Authorization
+
+- delete a user
+
+  - DELETE `/user/:userId`
+  - Request Header
+
+    - Authorization
+
+- update a user
+
+  - PATCH `/user/:userId`
+  - Request Body
+    - name
+    - email
+    - password
+  - Request Header
+
+    - Authorization
